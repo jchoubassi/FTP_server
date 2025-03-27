@@ -1,0 +1,91 @@
+#define USE_IPV6 false 
+
+- reminder to set to true 
+
+- no need to touch #include libs or global variables
+
+int main(int argc, char *argv[]) {
+    file_type = FileType::UNKNOWN;
+
+- we are initializing file_type to FileType::UNKOWN: which is our global variable 
+
+#define BUFFER_SIZE 256
+enum class FileType{BINARY, TEXT, UNKNOWN};
+FileType file_type;  
+
+- so pretty much how I understand it is that depending on what file the user passes in, it can either be
+- binary or text, but since we don't know yet we just set the file_type to be UNKNOWN.
+
+- no need to touch WSAStartup, this just checks if WSAStartup is running which is used for our sockets, if not running exits program
+
+ struct sockaddr_in localaddr,remoteaddr;  // will replace to change to IPV6
+ struct sockaddr_in local_data_addr_act;   // will replace to change to IPV6
+ char send_buffer[BUFFER_SIZE],receive_buffer[BUFFER_SIZE];
+
+- here is our variables that store our server and client address, below code says its socket declearation so im assuming we don't touch
+- we also have char arrays to make sure if we are sending or reciving data, each buffer is no longer than 256 bytes either way
+
+#elif defined _WIN32
+		  ns_data= INVALID_SOCKET;
+
+- ns_data is set to invalid to indicate no connection yet, and we printf the console message of our sever etc. 
+- we also declear variables such as active, n, btes, and the clean up the structure code is just there im assuming to
+- make sure the localaddr and remoteaddr are 0 when we launch our code
+
+ s = socket(AF_INET, SOCK_STREAM, 0); 
+
+- s is our socket, I will change this to support IPv6. below code just checks if the socket was created
+
+ localaddr.sin_family = AF_INET;
+
+- okay so I THINK localaddr has its own struct inside itself and we are accessing sin_family which is pretty much telling 
+- the system that we are using IPv4 which is our AF_INET 
+
+if (argc == 2)  { ....
+
+- the control connection code handles the amount of arguments we pass through the command line so e.g (open 192.168.68.57 1234)
+- im assuming open is just a default FTP command so it wont count towards an argv?
+- argv(0) = name of file so FTP_server (1) = 192.168.68.57 argv(2) = 1234
+- if doesn't give port so just IP, it will automatically assign the port to be 1234
+
+ if (bind(...
+
+- binds the socket (variable s we created earlier) to localadr which was our commandline address
+- we have our listen code after that to take on incoming connections
+
+ int count =0;
+ while (1) .....
+
+- here is our loop to constantly listen for connection request
+
+ #elif defined _WIN32 
+	ns = accept(s,(struct sockaddr *)(&remoteaddr), &addrlen); 
+
+- when the server accepts a new connection request from the client, it creates a new socket which is our ns and fills in its
+- remoteaddr variable with its client address, if ns == INVALID_socket we break otherwise we get the printf message of connecting
+- to the client IP address and responds with a welcome message saying 220 FTP server is ready
+
+- then we go onto our communication loop per client connected to our local address
+
+bytes = recv(ns, &receive_buffer[n], 1, 0); ....
+
+- recv means that we are receving data from the socket ns, this is to pretty much check the data being passed from the socket ns actually
+- has something in it so it passes one byte at a time until max of 256 (then it will process e.g and reset the buffer), 
+- if the socket ns passes something that is 0 or less than 0 it assumes that the client has disconnected or an error has happend
+
+- then we go onto the command/request from user
+- so if (count >= 0 && count < BUFFER_SIZE, this is to check the buffer size and doesn't go over the max
+- I think we have to alter some im not sure might have to go over this together
+
+
+
+
+
+
+
+
+
+
+
+
+
