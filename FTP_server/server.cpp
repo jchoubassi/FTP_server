@@ -51,7 +51,7 @@ enum class FileType{BINARY, TEXT, UNKNOWN};
 FileType file_type;  
 
 //MAIN
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])  {
 // INITIALIZATION
 file_type = FileType::UNKNOWN;
 
@@ -99,7 +99,7 @@ file_type = FileType::UNKNOWN;
 		 printf("\n============================================\n");
 		 printf("   << 159.342 Cross-platform FTP Server >>");
 		 printf("\n============================================\n");
-		 printf("   submitted by:     ");
+		 printf("   submitted by: Jordan Huang 23016360, ..., ... ");
 		 printf("\n           date:     ");
 		 printf("\n============================================\n");
 	
