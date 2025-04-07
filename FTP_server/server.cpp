@@ -99,7 +99,7 @@ file_type = FileType::UNKNOWN;
 		 printf("\n============================================\n");
 		 printf("   << 159.342 Cross-platform FTP Server >>");
 		 printf("\n============================================\n");
-		 printf("   submitted by: Jordan Huang 23016360, ..., ... ");
+		 printf("   submitted by: Jordan Huang 23016360, Neishun Lopati 21012082, ... ");
 		 printf("\n           date:     ");
 		 printf("\n============================================\n");
 	
