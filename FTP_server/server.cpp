@@ -17,7 +17,7 @@
 // Author: n.h.reyes@massey.ac.nz
 //=======================================================================================================================
 
-#define USE_IPV6 false  //if set to false, IPv4 addressing scheme will be used; you need to set this to true to //enable IPv6 later on.  The assignment will be marked using IPv6!
+#define USE_IPV6 true  //Prev set to false
 
 #if defined __unix__ || defined __APPLE__
   #include <unistd.h>
@@ -71,9 +71,8 @@ file_type = FileType::UNKNOWN;
 #endif		 
 
 
-		 struct sockaddr_in localaddr,remoteaddr;  //ipv4 only, needs replacing
-		 struct sockaddr_in local_data_addr_act;   //ipv4 only, needs replacing
-
+		 struct sockaddr_storage localaddr,remoteaddr;  //changed sockaddr_in (ipv4) to _storage (ipv6)
+		 struct sockaddr_storage local_data_addr_act;   //changed sockaddr_in (ipv4) to _storage (ipv6)
 #if defined __unix__ || defined __APPLE__
 
 		 int s,ns;                //socket declaration
