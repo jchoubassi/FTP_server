@@ -71,8 +71,8 @@ file_type = FileType::UNKNOWN;
 #endif		 
 
 
-		 struct sockaddr_storage localaddr,remoteaddr;  //changed sockaddr_in (ipv4) to _storage (ipv6)
-		 struct sockaddr_storage local_data_addr_act;   //changed sockaddr_in (ipv4) to _storage (ipv6)
+		 struct sockaddr_in6 localaddr,remoteaddr;
+		 struct sockaddr_in6 local_data_addr_act;
 #if defined __unix__ || defined __APPLE__
 
 		 int s,ns;                //socket declaration
@@ -107,7 +107,8 @@ file_type = FileType::UNKNOWN;
 		 memset(&remoteaddr,0,sizeof(remoteaddr));//clean up the structure
 		 
 //SOCKET
-		 s = socket(AF_INET, SOCK_STREAM, 0); //old programming style, needs replacing
+		 s = socket(AF_INET6, SOCK_STREAM, 0); //ipv6 compliant, will test
+
 
 #if defined __unix__ || defined __APPLE__
 		 if (s <0) {
@@ -118,21 +119,20 @@ file_type = FileType::UNKNOWN;
 	 		printf("socket failed\n");
 	 	 }
 #endif
-
-
-		 localaddr.sin_family = AF_INET;
+		 memset(&localaddr, 0, sizeof(localaddr));
+		 localaddr.sin6_family = AF_INET6;
 		 
 		 //CONTROL CONNECTION:  port number = content of argv[1]
 		 if (argc == 2) {
-			 localaddr.sin_port = htons((u_short)atoi(argv[1])); //ipv4 only, needs replacing. In our lectures, we have an //elegant way of resolving the local address and port to //be used by the server.				
+			 localaddr.sin6_port = htons((u_short)atoi(argv[1]));			
 		 }
 		 else {
-			 localaddr.sin_port = htons(1234);//default listening port //ipv4 only, needs replacing
+			 localaddr.sin6_port = htons(1234);
 		 }
-		 localaddr.sin_addr.s_addr = INADDR_ANY;//server address should be local, old programming style, needs replacing
+		 localaddr.sin6_addr = IN6ADDR_ANY;
 
 //BIND
-		 if (bind(s,(struct sockaddr *)(&localaddr),sizeof(localaddr)) != 0) { //old programming style, needs replacing
+		 if (bind(s, (struct sockaddr *)&localaddr,sizeof(struct sockaddr_in6)) != 0) {
 			 printf("Bind failed!\n");
 			 exit(0);
 		 }
@@ -161,7 +161,7 @@ file_type = FileType::UNKNOWN;
 #elif defined _WIN32 
 			 if (ns == INVALID_SOCKET) break;
 #endif
-				 
+
 			 printf("\n============================================================================\n");
 	 		 printf("connected to [CLIENT's IP %s , port %d] through SERVER's port %d",
 			         inet_ntoa(remoteaddr.sin_addr),ntohs(remoteaddr.sin_port),ntohs(localaddr.sin_port)); //ipv4 only, needs replacing
@@ -371,7 +371,7 @@ file_type = FileType::UNKNOWN;
 			      
 		       }
 					 
-					 local_data_addr_act.sin_family=AF_INET;//local_data_addr_act  //ipv4 only, needs to be replaced.
+					 local_data_addr_act.sin_family=AF_INET6;//local_data_addr_act  //ipv4 only, needs to be replaced.
 					 count=snprintf(ip_decimal,NI_MAXHOST, "%d.%d.%d.%d", act_ip[0], act_ip[1], act_ip[2],act_ip[3]);
 
 					 if(!(count >=0 && count < BUFFER_SIZE)) break;
