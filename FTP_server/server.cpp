@@ -32,6 +32,7 @@
   #include <iostream>
 
 #elif defined __WIN32__
+  #include <ws2tcpip.h>
   #include <winsock2.h>
   #include <ws2tcpip.h> //required by getaddrinfo() and special constants
   #include <stdlib.h>
@@ -68,9 +69,7 @@ file_type = FileType::UNKNOWN;
 		      printf("WSAStartup failed with error: %d\n", err);
 		      exit(1);
 		 }
-#endif		 
-
-
+#endif
 		 struct sockaddr_in6 localaddr,remoteaddr;
 		 struct sockaddr_in6 local_data_addr_act;
 #if defined __unix__ || defined __APPLE__
@@ -91,7 +90,7 @@ file_type = FileType::UNKNOWN;
 #elif defined _WIN32
 		  ns_data= INVALID_SOCKET;
 #endif
-
+char ip_decimal[INET6_ADDRSTRLEN];
 		 int active=0;
 		 int n,bytes,addrlen;
 		 
@@ -129,7 +128,7 @@ file_type = FileType::UNKNOWN;
 		 else {
 			 localaddr.sin6_port = htons(1234);
 		 }
-		 localaddr.sin6_addr = IN6ADDR_ANY;
+		 localaddr.sin6_addr = in6addr_any;
 
 //BIND
 		 if (bind(s, (struct sockaddr *)&localaddr,sizeof(struct sockaddr_in6)) != 0) {
@@ -147,7 +146,7 @@ file_type = FileType::UNKNOWN;
 			    addrlen = sizeof(remoteaddr);
 //NEW SOCKET newsocket = accept  //CONTROL CONNECTION
 			 printf("\n------------------------------------------------------------------------\n");
-			 printf("SERVER is waiting for an incoming connection request at port:%d", ntohs(localaddr.sin_port));
+			 printf("SERVER is waiting for an incoming connection request at port:%d", ntohs(localaddr.sin6_port));
 			 printf("\n------------------------------------------------------------------------\n");
 
 #if defined __unix__ || defined __APPLE__ 
@@ -162,18 +161,21 @@ file_type = FileType::UNKNOWN;
 			 if (ns == INVALID_SOCKET) break;
 #endif
 
+			char client_ip[INET6_ADDRSTRLEN];
+			inet_ntop(AF_INET6, &remoteaddr.sin6_addr, client_ip, sizeof(client_ip));
 			 printf("\n============================================================================\n");
-	 		 printf("connected to [CLIENT's IP %s , port %d] through SERVER's port %d",
-			         inet_ntoa(remoteaddr.sin_addr),ntohs(remoteaddr.sin_port),ntohs(localaddr.sin_port)); //ipv4 only, needs replacing
+	 		 printf("connected to [CLIENT's IP %s , port %d] through SERVER's port %d", client_ip,
+			         ntohs(remoteaddr.sin6_port),ntohs(localaddr.sin6_port));
 			 printf("\n============================================================================\n");
-			 //printf("detected CLIENT's port number: %d\n", ntohs(remoteaddr.sin_port));
+			 printf("detected CLIENT's port number: %d\n", ntohs(remoteaddr.sin6_port));
 
 			 //printf("connected to CLIENT's IP %s at port %d of SERVER\n",
 			 //inet_ntoa(remoteaddr.sin_addr),ntohs(localaddr.sin_port));
 			 
 			 //printf("detected CLIENT's port number: %d\n", ntohs(remoteaddr.sin_port));
-//Respond with welcome message
-			 count=snprintf(send_buffer,BUFFER_SIZE,"220 FTP Server ready. \r\n");
+			//Respond with welcome message
+			
+			count=snprintf(send_buffer,BUFFER_SIZE,"220 FTP Server ready. \r\n");
 			 if(count >=0 && count < BUFFER_SIZE){
 			 	 bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 
@@ -182,8 +184,6 @@ file_type = FileType::UNKNOWN;
 			 while (1) {
 				 
 				 n = 0;
-
-				 
 				 while (1) {
 //RECEIVE MESSAGE AND THEN FILTER IT
 				   bytes = recv(ns, &receive_buffer[n], 1, 0);//receive byte by byte...
@@ -371,25 +371,24 @@ file_type = FileType::UNKNOWN;
 			      
 		       }
 					 
-					 local_data_addr_act.sin_family=AF_INET6;//local_data_addr_act  //ipv4 only, needs to be replaced.
+					 local_data_addr_act.sin6_family=AF_INET6;
 					 count=snprintf(ip_decimal,NI_MAXHOST, "%d.%d.%d.%d", act_ip[0], act_ip[1], act_ip[2],act_ip[3]);
 
 					 if(!(count >=0 && count < BUFFER_SIZE)) break;
 					 
 					 printf("\tCLIENT's IP is %s\n",ip_decimal);  //IPv4 format
-					 local_data_addr_act.sin_addr.s_addr=inet_addr(ip_decimal);  //ipv4 only, needs to be replaced.
+					 inet_pton(AF_INET6, ip_decimal, &local_data_addr_act.sin6_addr);
 					 port_dec=act_port[0];
 					 port_dec=port_dec << 8;
 					 port_dec=port_dec+act_port[1];
 					 printf("\tCLIENT's Port is %d\n",port_dec);
 					 printf("===================================================\n");
 					 
-					 local_data_addr_act.sin_port=htons(port_dec); //ipv4 only, needs to be replaced
-
+					 local_data_addr_act.sin6_port =htons(port_dec); 
 
         	//Note: the following connect() function is not correctly placed.  It works, but technically, as defined by the protocol, connect() should occur in another place.  Hint: carefully inspect the lecture on FTP, active operations to find the answer. 
 					 if (connect(s_data_act, (struct sockaddr *)&local_data_addr_act, (int) sizeof(struct sockaddr)) != 0){
-						 printf("trying connection in %s %d\n",inet_ntoa(local_data_addr_act.sin_addr),ntohs(local_data_addr_act.sin_port));
+						 printf("trying connection in %s %d\n",inet_ntop);inet_ntop(AF_INET6, &local_data_addr_act.sin6_addr, ip_decimal, sizeof(ip_decimal));
 						 count=snprintf(send_buffer,BUFFER_SIZE, "425 Something is wrong, can't start active connection... \r\n");
 						 if(count >=0 && count < BUFFER_SIZE){
 						   bytes = send(ns, send_buffer, strlen(send_buffer), 0);
@@ -492,9 +491,8 @@ file_type = FileType::UNKNOWN;
 
 			closesocket(ns);
 #endif
-			printf("DISCONNECTED from %s\n",inet_ntoa(remoteaddr.sin_addr)); //IPv4 only, needs replacing
+			printf("DISCONNECTED from %s\n",inet_ntop(AF_INET6, &remoteaddr.sin6_addr, ip_decimal, sizeof(ip_decimal)));
 
-			 
 		 //====================================================================================
 		 } //End of MAIN LOOP
 		 //====================================================================================
