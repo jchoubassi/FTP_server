@@ -69,9 +69,11 @@ file_type = FileType::UNKNOWN;
 		      printf("WSAStartup failed with error: %d\n", err);
 		      exit(1);
 		 }
-#endif
-		 struct sockaddr_in6 localaddr,remoteaddr;
-		 struct sockaddr_in6 local_data_addr_act;
+#endif		 
+
+		 struct sockaddr_in6 localaddr,remoteaddr; // replaced ipv4 with ipv6
+		 struct sockaddr_in6 local_data_addr_act; // replaced ipv4 with ipv6		
+
 #if defined __unix__ || defined __APPLE__
 
 		 int s,ns;                //socket declaration
@@ -106,7 +108,7 @@ char ip_decimal[INET6_ADDRSTRLEN];
 		 memset(&remoteaddr,0,sizeof(remoteaddr));//clean up the structure
 		 
 //SOCKET
-		 s = socket(AF_INET6, SOCK_STREAM, 0); //ipv6 compliant, will test
+		 s = socket(AF_INET6, SOCK_STREAM, 0); // ipv6 compliant, will test
 
 
 #if defined __unix__ || defined __APPLE__
@@ -118,17 +120,49 @@ char ip_decimal[INET6_ADDRSTRLEN];
 	 		printf("socket failed\n");
 	 	 }
 #endif
-		 memset(&localaddr, 0, sizeof(localaddr));
-		 localaddr.sin6_family = AF_INET6;
-		 
-		 //CONTROL CONNECTION:  port number = content of argv[1]
-		 if (argc == 2) {
-			 localaddr.sin6_port = htons((u_short)atoi(argv[1]));			
-		 }
-		 else {
-			 localaddr.sin6_port = htons(1234);
-		 }
-		 localaddr.sin6_addr = in6addr_any;
+
+// set our default port if they don't set
+#define DEFAULT_PORT "1234"
+
+// cleans up the structure (double check)
+memset(&localaddr, 0, sizeof(localaddr));
+// sets socket to use IPv6
+localaddr.sin6_family = AF_INET6;
+
+// getaddrinfo (where we are storing our address information),*result (think linklist for multiple connections but I think this has to do with ipv4 and ipv6)
+struct addrinfo *result = NULL, hints; // provide hints for the addrinfo structure
+int iResult; // not sure why they didn't use boolean but just checks 1 or 0 if the getaddrinfo was successful or not
+
+// memclear again for hints
+memset(&hints, 0, sizeof(struct addrinfo));
+hints.ai_family = AF_INET6;  
+hints.ai_socktype = SOCK_STREAM;
+hints.ai_protocol = IPPROTO_TCP;
+hints.ai_flags = AI_PASSIVE; 
+
+// commandline, checks if user gave a port or not
+const char *port = (argc == 2) ? argv[1] : DEFAULT_PORT;  
+
+// make sure that all the values are there, if one of the values returns wrong, prints getaddrinfo....
+iResult = getaddrinfo(NULL, port, &hints, &result);
+if (iResult != 0) {
+    printf("getaddrinfo failed: %d\n", iResult);
+    // Clean up and exit
+    WSACleanup();
+    exit(1);
+}
+// mem clean
+freeaddrinfo(result);
+
+		 // old code
+		//CONTROL CONNECTION:  port number = content of argv[1]
+		// if (argc == 2) {
+		//	 localaddr.sin6_port = htons((u_short)atoi(argv[1]));			 
+		// }
+		// else {
+		//	 localaddr.sin6_port = htons(1234);
+		// }
+		// localaddr.sin6_addr = IN6ADDR_ANY;
 
 //BIND
 		 if (bind(s, (struct sockaddr *)&localaddr,sizeof(struct sockaddr_in6)) != 0) {
