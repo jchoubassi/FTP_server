@@ -422,7 +422,8 @@ freeaddrinfo(result);
 
         	//Note: the following connect() function is not correctly placed.  It works, but technically, as defined by the protocol, connect() should occur in another place.  Hint: carefully inspect the lecture on FTP, active operations to find the answer. 
 					 if (connect(s_data_act, (struct sockaddr *)&local_data_addr_act, (int) sizeof(struct sockaddr)) != 0){
-						 printf("trying connection in %s %d\n",inet_ntop);inet_ntop(AF_INET6, &local_data_addr_act.sin6_addr, ip_decimal, sizeof(ip_decimal));
+						 printf("trying connection in %s %d\n",ip_decimal, ntohs(local_data_addr_act.sin6_port));
+						 inet_ntop(AF_INET6, &local_data_addr_act.sin6_addr, ip_decimal, sizeof(ip_decimal));
 						 count=snprintf(send_buffer,BUFFER_SIZE, "425 Something is wrong, can't start active connection... \r\n");
 						 if(count >=0 && count < BUFFER_SIZE){
 						   bytes = send(ns, send_buffer, strlen(send_buffer), 0);
