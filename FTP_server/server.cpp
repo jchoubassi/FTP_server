@@ -38,7 +38,6 @@
   #include <stdlib.h>
   #include <stdio.h>
   #include <iostream>
-//   #include <WinSock2.h>
   
   #define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
 //The high-order byte specifies the minor version number; 
