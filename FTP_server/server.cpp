@@ -164,7 +164,7 @@ freeaddrinfo(result);
 		// localaddr.sin6_addr = IN6ADDR_ANY;
 
 //BIND
-		 if (bind(s, (struct sockaddr *)&localaddr,sizeof(struct sockaddr_in6)) != 0) {
+		 if (bind(s, result->ai_addr, (int)result->ai_addrlen) != 0) {
 			 printf("Bind failed!\n");
 			 exit(0);
 		 }
@@ -177,9 +177,12 @@ freeaddrinfo(result);
 		 while (1) {//Start of MAIN LOOP
 		 //====================================================================================
 			    addrlen = sizeof(remoteaddr);
-//NEW SOCKET newsocket = accept  //CONTROL CONNECTION
+//NEW SOCKET newsocket = accept  //CONTROL 
+				struct sockaddr_in6 actual_addr;
+				socklen_t len = sizeof(actual_addr);
+				getsockname(s, (struct sockaddr*)&actual_addr, &len);
 			 printf("\n------------------------------------------------------------------------\n");
-			 printf("SERVER is waiting for an incoming connection request at port:%d", ntohs(localaddr.sin6_port));
+			 printf("SERVER is waiting for an incoming connection request at port:%d", ntohs(actual_addr.sin6_port));
 			 printf("\n------------------------------------------------------------------------\n");
 
 #if defined __unix__ || defined __APPLE__ 
@@ -359,8 +362,24 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if (strncmp(receive_buffer,"CWD",3)==0)  {
-					 printf("unrecognised command \n");
-					 count=snprintf(send_buffer,BUFFER_SIZE,"502 command not implemented\r\n");					 
+					 char dirname[BUFFER_SIZE];
+
+					 //take the directory name from after the CWD command
+					 int detecteddir = sscanf(receive_buffer, "CWD %s", dirname);
+
+					 if (detecteddir < 1) {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "501 Cannot find directory name in command.\r\n");
+					 }
+					 else {
+						 int directory = chdir(dirname)
+							 if (directory != 0) {
+								 count = snprintf(send_buffer, BUFFER_SIZE, "550 Failed to change directory.\r\n");
+							 }
+							 else {
+								 count = snprintf(send_buffer, BUFFER_SIZE, "250 Directory successfully changed.\r\n");
+							 }
+					 }
+
 					 if(count >=0 && count < BUFFER_SIZE){
 					   bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 					 }
@@ -380,7 +399,7 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if(strncmp(receive_buffer,"PORT",4)==0) {
-					 s_data_act = socket(AF_INET, SOCK_STREAM, 0);
+					 s_data_act = socket(AF_INET6, SOCK_STREAM, 0);
 					 //local variables
 					 //unsigned char act_port[2];
 					 int act_port[2];

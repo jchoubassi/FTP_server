@@ -1,0 +1,22 @@
+ Volume in drive C is Main Drive
+ Volume Serial Number is 9455-DC0D
+
+ Directory of C:\Users\neish\source\repos\jchoubassi\FTP_server\FTP_server
+
+07/04/2025  03:54 pm    <DIR>          .
+07/04/2025  03:37 pm    <DIR>          ..
+07/04/2025  03:37 pm    <DIR>          .vscode
+07/04/2025  03:37 pm           100,376 black.jpg
+07/04/2025  03:37 pm               694 makefile
+07/04/2025  03:37 pm               163 makefile - macOS
+07/04/2025  03:37 pm               176 makefile - Windows
+07/04/2025  03:37 pm             1,161 notes_on_mac_napoleon.txt
+07/04/2025  03:37 pm             1,142 sample_ftp_ipv4_interaction.txt
+07/04/2025  03:37 pm             1,173 sample_ftp_ipv6_interaction.txt
+07/04/2025  03:51 pm            19,609 server.cpp
+07/04/2025  03:51 pm           451,201 server.exe
+07/04/2025  03:54 pm                 0 tmp.txt
+07/04/2025  03:37 pm            17,855 VSCode support files.docx
+07/04/2025  03:37 pm            71,993 white.jpg
+              12 File(s)        665,543 bytes
+               3 Dir(s)  21,477,609,472 bytes free
