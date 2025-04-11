@@ -342,8 +342,66 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if (strncmp(receive_buffer,"RETR",4)==0)  {
-					 printf("unrecognised command \n");
-					 count=snprintf(send_buffer,BUFFER_SIZE,"502 command not implemented\r\n");					 
+					 printf("RETR command received.\n");
+					 //store filename 
+					 char filename[BUFFER_SIZE];
+					 int parsed_filename = sscanf(receive_buffer, "RETR %s", filename);
+					 //file pointer
+					 FILE* file = NULL;
+
+					 //if we cant find a filename, show error
+					 if (parsed_filename < 1) {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "501 Missing filename.\r\n");
+
+
+					 }
+					 //error handling for file type
+					 else {
+						 //determine binary or text mode
+						 if (file_type == FileType::BINARY) {
+							 printf("Opening file in binary mode.\n");
+							 //Binary
+							 file = fopen(filename, "rb");
+						 } else if (file_type == FileType::TEXT) {
+							 printf("Opening file in text mode.\n");
+							 //Text
+							 file = fopen(filename, "r");
+						 } else {
+							 // If file type unknown, don't open anything
+							 printf("Unrecognized file type.\n");
+							 file = NULL;
+						 }
+					 }
+
+					 //ERROR handling brackets in case theres no file
+					 if (file != NULL) { //if file isnt null and can open 
+						 //start transsfer
+						 count = snprintf(send_buffer, BUFFER_SIZE, "150 Opening data connection...\r\n");
+						 char buffer[BUFFER_SIZE];
+						 int read_bytes;
+						 //read bits of file and transfer chunks over
+						 while (!feof(file)) {
+							 read_bytes = fread(buffer, 1, BUFFER_SIZE, file);
+
+							 if (read_bytes > 0) {
+								 if (active == 0) {
+									 send(ns_data, buffer, read_bytes, 0); //passive
+								 }
+								 else {
+									 send(s_data_act, buffer, read_bytes, 0); //active
+								 }
+							 }
+						 }
+
+						 fclose(file); //to close after transferring
+						 //all done!
+						 count = snprintf(send_buffer, BUFFER_SIZE, "226 Transfer successful, closing data connection\r\n");
+					 }
+					 //file couldnt be opened
+					 else if (file == NULL) {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "550 File not found or cannot open.\r\n");
+					 }
+
 					 if(count >=0 && count < BUFFER_SIZE){
 					    bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 					 }
@@ -523,7 +581,7 @@ freeaddrinfo(result);
 
 					 FILE *fin;
 
-           fin=fopen("tmp.txt","r");//open tmp.txt file
+						fin=fopen("tmp.txt","r");//open tmp.txt file
 
 					 //snprintf(send_buffer,BUFFER_SIZE,"125 Transfering... \r\n");
 					 //snprintf(send_buffer,BUFFER_SIZE,"150 Opening ASCII mode data connection... \r\n");
@@ -566,8 +624,8 @@ freeaddrinfo(result);
 					 else 
 					 		closesocket(s_data_act);
 
-					 //OPTIONAL, delete the temporary file
-					 //system("del tmp.txt");
+					 //delete the temporary file
+					 system("del tmp.txt");
 #endif	 
 					 
 					 
