@@ -241,20 +241,30 @@ freeaddrinfo(result);
 //PROCESS COMMANDS/REQUEST FROM USER*				 
 
 				 if (strncmp(receive_buffer,"USER",4)==0)  {
-					 printf("Logging in... \n");
-					 count=snprintf(send_buffer,BUFFER_SIZE,"331 Password required (anything will do really... :-) \r\n");
-					 if(count >=0 && count < BUFFER_SIZE){
-					    bytes = send(ns, send_buffer, strlen(send_buffer), 0);
+					 printf("USER command received.\n");
+					 if (strncmp(receive_buffer, "USER napoleon", 13) == 0) {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "331 Password required\r\n");
+					 }
+					 else {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "530 Invalid User\r\n");
+					 }
+					 if (count >= 0 && count < BUFFER_SIZE) {
+						 bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 					 }
 					 printf("[DEBUG INFO] <-- %s\n", send_buffer);
 					 if (bytes < 0) break;
 				 }
 				 //---
-				 if (strncmp(receive_buffer,"PASS",4)==0)  {
-					 
-					 count=snprintf(send_buffer,BUFFER_SIZE,"230 Public login sucessful \r\n");					 
-					 if(count >=0 && count < BUFFER_SIZE){
-					    bytes = send(ns, send_buffer, strlen(send_buffer), 0);
+				 if (strncmp(receive_buffer, "PASS", 4) == 0) {
+					 printf("PASS command received.\n");
+					 if (strncmp(receive_buffer, "PASS 342", 8) == 0) {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "230 User logged in okay\r\n");
+					 }
+					 else {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "530 Password incorrect\r\n");
+					 }
+					 if (count >= 0 && count < BUFFER_SIZE) {
+						 bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 					 }
 					 printf("[DEBUG INFO] <-- %s\n", send_buffer);
 					 if (bytes < 0) break;
@@ -352,8 +362,35 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if (strncmp(receive_buffer,"EPRT",4)==0)  {  //more work needs to be done here
-					 printf("unrecognised command \n");
-					 count=snprintf(send_buffer,BUFFER_SIZE,"502 command not implemented\r\n");					 
+					 printf("EPRT command received.\n");
+
+					 char delimiter;
+					 //store ip
+					 char ip_string[INET6_ADDRSTRLEN];
+					 int port;
+
+					 int parsed_string = sscanf(receive_buffer, "EPRT |%*d|%[^|]|%d|", ip_string, &port);
+					 if (parsed_string < 2) {
+						 count = snprintf(send_buffer, BUFFER_SIZE, "501 error in ERPT command.\r\n");
+					 }
+					 else {
+						 //creating the actual data socket here
+						 s_data_act = socket(AF_INET6, SOCK_STREAM, 0);
+#if defined __unix__ || defined __APPLE__
+						 if (s_data_act < 0) {
+							 count = snprintf(send_buffer, BUFFER_SIZE, "425 can't get connection.\r\n");
+						}
+#elif defined _WIN32
+						 if (s_data_act == INVALID_SOCKET) {
+							 count = snprintf(send_buffer, BUFFER_SIZE, "425 can't get connection.\r\n");
+						}
+#endif
+						 else {
+
+
+						 }
+					 }
+
 					 if(count >=0 && count < BUFFER_SIZE){
 					    bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 					 }
@@ -362,6 +399,7 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if (strncmp(receive_buffer,"CWD",3)==0)  {
+					 printf("CWD command received.\n");
 					 char dirname[BUFFER_SIZE];
 
 					 //take the directory name from after the CWD command
@@ -371,7 +409,7 @@ freeaddrinfo(result);
 						 count = snprintf(send_buffer, BUFFER_SIZE, "501 Cannot find directory name in command.\r\n");
 					 }
 					 else {
-						 int directory = chdir(dirname)
+						 int directory = chdir(dirname);
 							 if (directory != 0) {
 								 count = snprintf(send_buffer, BUFFER_SIZE, "550 Failed to change directory.\r\n");
 							 }
@@ -388,6 +426,7 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if (strncmp(receive_buffer,"QUIT",4)==0)  {
+					 printf("QUIT command received.\n");
 					 printf("Quit \n");
 					 count=snprintf(send_buffer,BUFFER_SIZE,"221 Connection close by client\r\n");					 
 					 if(count >=0 && count < BUFFER_SIZE){
@@ -399,6 +438,7 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if(strncmp(receive_buffer,"PORT",4)==0) {
+					 printf("PORT command received.\n");
 					 s_data_act = socket(AF_INET6, SOCK_STREAM, 0);
 					 //local variables
 					 //unsigned char act_port[2];
@@ -470,6 +510,7 @@ freeaddrinfo(result);
 
 				 //technically, LIST is different than NLST,but we make them the same here
 				 if ( (strncmp(receive_buffer,"LIST",4)==0) || (strncmp(receive_buffer,"NLST",4)==0))   {
+					 printf("LIST command received.\n");
 #if defined __unix__ || defined __APPLE__ 
 
 					 int i=system("ls -la > tmp.txt");//change that to 'dir', so windows can understand
