@@ -38,6 +38,7 @@
   #include <stdlib.h>
   #include <stdio.h>
   #include <iostream>
+  #include <direct.h> 
   
   #define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
 //The high-order byte specifies the minor version number; 
@@ -121,7 +122,7 @@ char ip_decimal[INET6_ADDRSTRLEN];
 #endif
 
 // set our default port if they don't set
-#define DEFAULT_PORT "1234"
+#define DEFAULT_PORT "21"
 
 // cleans up the structure (double check)
 memset(&localaddr, 0, sizeof(localaddr));
@@ -271,6 +272,7 @@ freeaddrinfo(result);
 				 }
 				 //---
 				 if (strncmp(receive_buffer,"SYST",4)==0)  {
+					 printf("<--SYST command received.\n\n");
 					 printf("Information about the system \n");
 					 count=snprintf(send_buffer,BUFFER_SIZE,"215 Windows 64-bit\r\n");					 
 					 if(count >=0 && count < BUFFER_SIZE){
@@ -279,13 +281,10 @@ freeaddrinfo(result);
 					 printf("[DEBUG INFO] <-- %s\n", send_buffer);
 					 if (bytes < 0) break;
 				 }
-				 
 				 //---
 				 if (strncmp(receive_buffer,"TYPE",4)==0)  {
-
-				 	     bytes=0;
-				       printf("<--TYPE command received.\n\n");
-
+					 printf("<--TYPE command received.\n\n");
+				 	   bytes=0;
 				       char objType;
 				       int scannedItems = sscanf(receive_buffer, "TYPE %c", &objType);
 				       if(scannedItems < 1) {
@@ -384,6 +383,7 @@ freeaddrinfo(result);
 							 read_bytes = fread(buffer, 1, BUFFER_SIZE, file);
 
 							 if (read_bytes > 0) {
+								 //using active to decide between modes and which socket to send data on
 								 if (active == 0) {
 									 send(ns_data, buffer, read_bytes, 0); //passive
 								 }
@@ -396,10 +396,11 @@ freeaddrinfo(result);
 						 fclose(file); //to close after transferring
 						 //all done!
 						 count = snprintf(send_buffer, BUFFER_SIZE, "226 Transfer successful, closing data connection\r\n");
+						 active = 0; //set to passive again after we finish transfer
 					 }
 					 //file couldnt be opened
 					 else if (file == NULL) {
-						 count = snprintf(send_buffer, BUFFER_SIZE, "550 File not found or cannot open.\r\n");
+						 count = snprintf(send_buffer, BUFFER_SIZE, "550 File not found or cannot be opened.\r\n");
 					 }
 
 					 if(count >=0 && count < BUFFER_SIZE){
@@ -421,19 +422,30 @@ freeaddrinfo(result);
 				 //---
 				 if (strncmp(receive_buffer,"EPRT",4)==0)  {  //more work needs to be done here
 					 printf("EPRT command received.\n");
-
-					 char delimiter;
 					 //store ip
 					 char ip_string[INET6_ADDRSTRLEN];
 					 int port;
-
-					 int parsed_string = sscanf(receive_buffer, "EPRT |%*d|%[^|]|%d|", ip_string, &port);
+					 //parse what we got from the user
+					 int parsed_string = sscanf(receive_buffer, "EPRT |2|%[^|]|%d|", ip_string, &port);
 					 if (parsed_string < 2) {
 						 count = snprintf(send_buffer, BUFFER_SIZE, "501 error in ERPT command.\r\n");
 					 }
 					 else {
+
 						 //creating the actual data socket here
 						 s_data_act = socket(AF_INET6, SOCK_STREAM, 0);
+						 //clean slate
+						 memset(&local_data_addr_act, 0, sizeof(local_data_addr_act));
+						 //set to ipv6
+						 local_data_addr_act.sin6_family = AF_INET6;
+						 //ip to binary and stored
+						 inet_pton(AF_INET6, ip_string, &local_data_addr_act.sin6_addr);
+						 //sets port
+						 local_data_addr_act.sin6_port = htons(port);
+
+						 //formattimg ip address from text to binary and stored
+						 inet_pton(AF_INET6, ip_string, &local_data_addr_act.sin6_addr);
+
 #if defined __unix__ || defined __APPLE__
 						 if (s_data_act < 0) {
 							 count = snprintf(send_buffer, BUFFER_SIZE, "425 can't get connection.\r\n");
@@ -444,8 +456,14 @@ freeaddrinfo(result);
 						}
 #endif
 						 else {
-
-
+							 int connect_result = connect(s_data_act, (struct sockaddr*)&local_data_addr_act, sizeof(local_data_addr_act));
+							 if (connect_result == 0) {
+								 count = snprintf(send_buffer, BUFFER_SIZE, "200 EPRT Command okay\r\n");
+								 active = 1; //SETTING to active mode to maintain right state and choose right socket
+							 }
+							 else {
+								 count = snprintf(send_buffer, BUFFER_SIZE, "425 Can't establish connection.\r\n");
+							 }
 						 }
 					 }
 
@@ -497,7 +515,7 @@ freeaddrinfo(result);
 				 //---
 				 if(strncmp(receive_buffer,"PORT",4)==0) {
 					 printf("PORT command received.\n");
-					 s_data_act = socket(AF_INET6, SOCK_STREAM, 0);
+					 s_data_act = socket(AF_INET, SOCK_STREAM, 0);
 					 //local variables
 					 //unsigned char act_port[2];
 					 int act_port[2];
@@ -578,37 +596,26 @@ freeaddrinfo(result);
 					 int i=system("dir > tmp.txt");
 #endif					 
 					 printf ("The value returned by system() was: %d.\n",i);
-
-					 FILE *fin;
-
-						fin=fopen("tmp.txt","r");//open tmp.txt file
+					 FILE* fin = fopen("tmp.txt", "r");
 
 					 //snprintf(send_buffer,BUFFER_SIZE,"125 Transfering... \r\n");
 					 //snprintf(send_buffer,BUFFER_SIZE,"150 Opening ASCII mode data connection... \r\n");
-					 count=snprintf(send_buffer,BUFFER_SIZE,"150 Opening data connection... \r\n");
-					 if(count >=0 && count < BUFFER_SIZE){					  
-					    bytes = send(ns, send_buffer, strlen(send_buffer), 0);
-					    printf("[DEBUG INFO] <-- %s\n", send_buffer);
-					 }  
-					 char temp_buffer[80];
-					 printf("transferring file...\n");
-					 while (!feof(fin)){
-					 	 strcpy(temp_buffer,"");
-						 if(fgets(temp_buffer,78,fin) != NULL){
-
-							 count=snprintf(send_buffer,BUFFER_SIZE,"%s",temp_buffer);
-							 if(count >=0 && count < BUFFER_SIZE){					   
-							 
-								 if (active==0) 
-								 	 send(ns_data, send_buffer, strlen(send_buffer), 0);
-								 else 
-								 	 send(s_data_act, send_buffer, strlen(send_buffer), 0);
+					 if (fin) {
+						 snprintf(send_buffer, BUFFER_SIZE, "150 Opening data connection...\r\n");
+						 send(ns, send_buffer, strlen(send_buffer), 0);
+						 char line[BUFFER_SIZE];
+						 while (fgets(line, sizeof(line), fin)) {
+							 if (active == 1) {
+								 send(s_data_act, line, strlen(line), 0);
 							 }
-						 }
-					 }
-           
-					 fclose(fin);					 
-					 count=snprintf(send_buffer,BUFFER_SIZE,"226 File transfer complete. \r\n");					 
+							 else if (active == 0) {
+								 send(ns_data, line, strlen(line), 0);
+							 }
+						 }						 
+							 fclose(fin);
+
+					 count=snprintf(send_buffer,BUFFER_SIZE,"226 File transfer complete. \r\n");
+
 					 if(count >=0 && count < BUFFER_SIZE){					  
 					   bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 					   printf("[DEBUG INFO] <-- %s\n", send_buffer);
@@ -627,10 +634,15 @@ freeaddrinfo(result);
 					 //delete the temporary file
 					 system("del tmp.txt");
 #endif	 
+					 }
+					 else {
+						 snprintf(send_buffer, BUFFER_SIZE, "450 Requested file action not taken.\r\n");
+						 send(ns, send_buffer, strlen(send_buffer), 0);
+					 }
 					 
 					 
 				 }
-                 //---			    
+                 //---		
 			 //=================================================================================	 
 			 }//End of COMMUNICATION LOOP per CLIENT
 			 //=================================================================================
