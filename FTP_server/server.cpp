@@ -63,9 +63,11 @@ file_type = FileType::UNKNOWN;
 	   int err = WSAStartup(WSVERS, &wsadata);
 
 		 if (err != 0) {
+		#if defined _WIN32
 		      WSACleanup();
 			  // Tell the user that we could not find a usable WinsockDLL
-		      printf("WSAStartup failed with error: %d\n", err);
+		#endif
+			  printf("WSAStartup failed with error: %d\n", err);
 		      exit(1);
 		 }
 #endif		 
@@ -146,8 +148,10 @@ const char *port = (argc == 2) ? argv[1] : DEFAULT_PORT;
 iResult = getaddrinfo(NULL, port, &hints, &result);
 if (iResult != 0) {
     printf("getaddrinfo failed: %d\n", iResult);
+#if defined _WIN32
     // Clean up and exit
     WSACleanup();
+#endif
     exit(1);
 }
 // mem clean
