@@ -170,7 +170,6 @@ if (iResult != 0) {
     exit(1);
 }
 // mem clean
-freeaddrinfo(result);
 
 	// old code
    //CONTROL CONNECTION:  port number = content of argv[1]
@@ -186,14 +185,17 @@ freeaddrinfo(result);
 	//binding 
 	if (bind(s, result->ai_addr, (int)result->ai_addrlen) != 0) {
 		printf("Bind failed!\n");
-		exit(0);
+		exit(1);
 	}
-
 	// mem clean
-	freeaddrinfo(result);
 
 //LISTEN
-	listen(s, 5);
+	if(listen(s, 5) == SOCKET_ERROR){
+		printf("listen failed!\n");
+		exit(1);
+	};
+
+freeaddrinfo(result); //free the addrinfo structure
 
 //INFINITE LOOP
 	int count = 0;
