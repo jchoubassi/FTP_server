@@ -105,6 +105,7 @@ int main(int argc, char* argv[]) {
 	printf("   Submitted by:\n");
 	printf("   - Jordan Huang  // 23016360\n");
 	printf("   - Neishun Lopati // 21012082\n");
+	printf("   - Jenny Choubassi  // 23003517\n");
 	printf("=====================================================================================================\n");
 
 	memset(&localaddr, 0, sizeof(localaddr));//clean up the structure
