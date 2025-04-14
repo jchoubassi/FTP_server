@@ -742,13 +742,19 @@ freeaddrinfo(result); //free the addrinfo structure
 				int i = system("ls -la > tmp.txt");//change that to 'dir', so windows can understand
 
 #elif defined _WIN32	
-				int i = system("dir > tmp.txt"); //WINDOWS format
+				int i = system("cmd /c \"dir > tmp.txt\""); //WINDOWS format
 #endif					 
 				printf("The value returned by system() was: %d.\n", i); //debugging purposes
 
 				//open the temp file
 				FILE* fin = fopen("tmp.txt", "r");
-
+				if (fin == NULL) {
+					printf("Error opening file.\n");
+				}
+				else{
+					printf("File opened successfully.\n");
+				}
+				//error handling for if the file is null
 				//if there is a temp file, then try to connect etc
 				if (fin) {
 					//if the active mode is selected then we connect! (moved from PORT since we should
